@@ -58,25 +58,26 @@ float vertices[] = {
 };
 //vector to translate a cube to get 10 cubes at different position in the scene
 glm::vec3 cubePositions[] = {
-  glm::vec3( 0.0f,  0.0f,  0.0f),
-  glm::vec3( 2.0f,  5.0f, -15.0f),
-  glm::vec3(-1.5f, -2.2f, -2.5f),
-  glm::vec3(-3.8f, -2.0f, -12.3f),
-  glm::vec3( 2.4f, -0.4f, -3.5f),
-  glm::vec3(-1.7f,  3.0f, -7.5f),
-  glm::vec3( 1.3f, -2.0f, -2.5f),
-  glm::vec3( 1.5f,  2.0f, -2.5f),
-  glm::vec3( 1.5f,  0.2f, -1.5f),
-  glm::vec3(-1.3f,  1.0f, -1.5f)
+  glm::vec3( 0.0f,  0.0f,  0.0f), //room cube
+  glm::vec3( -10.0f,  -12.0f, -10.0f),
+  glm::vec3(10.0f, -12.0f, -10.0f),
+  glm::vec3(10.0f, -12.0f, 10.0f),
+  glm::vec3( -10.0f, -12.0f, 10.0f),
+  glm::vec3( 10.0f,  10.0f, 10.0f),
+  glm::vec3(-10.0f,  10.0f, -10.0f),
+  glm::vec3( 10.0f, 10.0f, -10.0f),
+  glm::vec3( -10.0f,  10.0f, 10.0f),
+
+  //glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
 glm::vec3 cubeScale[] = {
 	glm::vec3( 30.0f,  30.0f,  30.0f),
+	glm::vec3( 5.0f,  5.0f,  5.0f),
 	glm::vec3( 1.0f,  1.0f,  1.0f),
-	glm::vec3( 1.0f,  1.0f,  1.0f),
-	glm::vec3( 1.0f,  1.0f,  1.0f),
-	glm::vec3( 1.0f,  1.0f,  1.0f),
-	glm::vec3( 1.0f,  1.0f,  1.0f),
+	glm::vec3( 4.0f,  4.0f,  4.0f),
+	glm::vec3( 2.0f,  2.0f,  2.0f),
+	glm::vec3( 3.0f,  3.0f,  3.0f),
 	glm::vec3( 1.0f,  1.0f,  1.0f),
 	glm::vec3( 1.0f,  1.0f,  1.0f),
 	glm::vec3( 1.0f,  1.0f,  1.0f),
@@ -84,15 +85,8 @@ glm::vec3 cubeScale[] = {
 };
 
 
-// index vertices
-//unsigned int indices[] = {
-//	0,1,3,
-//	1,2,3
-
-//};
-
 // camera
-glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  0.05f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 
@@ -182,21 +176,21 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	cameraFront = glm::normalize(front);
 }
 
-void createCube(int VAO, Shader shader)
+void createCube(int VAO, Shader shader, int i, bool rotate)
 {
 	glBindVertexArray(VAO);
-	for(unsigned int i = 0; i < 10; i++)
-	{
-	  glm::mat4 model;
-	  model = glm::translate(model, cubePositions[i]) * glm::scale(model, cubeScale[i]);
-	  float angle = 20.0f * i + 0.5f;
-	  model = glm::rotate(model, (float)glfwGetTime() * glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-	  shader.setMat4("model", model);
-
-	  glDrawArrays(GL_TRIANGLES, 0, 36);
+	glm::mat4 model;
+	model = glm::translate(model, cubePositions[i]) * glm::scale(model, cubeScale[i]);
+	if(rotate){
+		float angle = 20.0f * i + 0.5f;
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 	}
+
+	shader.setMat4("model", model);
+
+	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
-void renderLoop(GLFWwindow* window, Shader shader, int VAO, GLuint texture){
+void renderLoop(GLFWwindow* window, int VAO, Shader* shaders){
 	while(!glfwWindowShouldClose(window))
 	{
 		 // per-frame time logic
@@ -214,19 +208,86 @@ void renderLoop(GLFWwindow* window, Shader shader, int VAO, GLuint texture){
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// texture
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
+		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		shaders[0].setMat4("view", view);
+
+		glm::mat4 projection;
+		projection = glm::perspective(glm::radians(45.0f), (float)800 / (float)600, 0.1f, 100.0f);
+		// note: the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
+		shaders[0].setMat4("projection", projection);
+
+		GLuint texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
+		 //load image, create texture and generate mipmaps
+		SDL_Surface *tex = IMG_Load("./mur.jpg");
+
+		if(tex == 0) {
+			std::cout << "Erreur : " << SDL_GetError() << std::endl;
+		} else {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex->w, tex->h, 0, GL_RGB, GL_UNSIGNED_BYTE, tex->pixels);
+			glGenerateMipmap(GL_TEXTURE_2D);
+		}
+
+		 int vertexTexture = glGetUniformLocation(shaders[0].ID, "ourTexture");
+		 glUniform1i(vertexTexture,0);
+
+		 glEnable(GL_DEPTH_TEST);
+		 glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		 glStencilMask(0x00);
+		 shaders[0].use();
+
+		// room
+		createCube(VAO, shaders[0], 0, false);
+
+		 //load image, create texture and generate mipmaps
+		tex = IMG_Load("./cube.jpg");
+
+		if(tex == 0) {
+			std::cout << "Erreur : " << SDL_GetError() << std::endl;
+		} else {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex->w, tex->h, 0, GL_RGB, GL_UNSIGNED_BYTE, tex->pixels);
+			glGenerateMipmap(GL_TEXTURE_2D);
+		}
+
+		 vertexTexture = glGetUniformLocation(shaders[0].ID, "ourTexture");
+		 glUniform1i(vertexTexture,0);
+
+		 glActiveTexture(GL_TEXTURE0);
+		 glBindTexture(GL_TEXTURE_2D, texture);
 
 		// 3D
 		// 2. use our shader program when we want to render an object
-		shader.use();
+
+		shaders[0].use();
+//		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+//		glStencilMask(0xFF);
+
+		for(int i = 1; i < 6; i++) {
+			createCube(VAO, shaders[0], i, true);
+		}
+
+//		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+//		glStencilMask(0x00);
+//		glDisable(GL_DEPTH_TEST);
 
 
-		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		shader.setMat4("view", view);
+//		shaders[1].use();
+//		glm::mat4 model;
+//		model = glm::mat4();
+//		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+//		model = glm::scale(model, cubeScale[2]);
+//		shaders[1].setMat4("model", model);
+//		shaders[1].setMat4("view", view);
+//		shaders[1].setMat4("projection", projection);
 
-		createCube(VAO, shader);
+//		for(int i = 1; i < 6; i++) {
+//			createCube(VAO, shaders[1], i, true);
+//		}
+
+		glStencilMask(0xFF);
+		glEnable(GL_DEPTH_TEST);
 
 		// 3. now draw the object
 		//glDrawArrays(GL_TRIANGLES, 0 , 36);
@@ -269,7 +330,7 @@ int main(int argc, char **argv) {
 	/**
 	 * Create and bind buffer and shader
 	 */
-	Shader shader("./vertexShaderCubeTex.vsl", "fragmentShaderCubeTex.fsl");
+	Shader shader("./vertexShaderCubeTex.vsl", "./fragmentShaderCubeTex.fsl");
 	unsigned int VBO, VAO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -320,38 +381,12 @@ int main(int argc, char **argv) {
 
 	// load and create a texture
 	   // -------------------------
-	   GLuint texture;
-	   glGenTextures(1, &texture);
-	   glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
-//	   // set the texture wrapping parameters
-//	   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-//	   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-//		//set texture filtering parameters
-//	   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//	   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		//load image, create texture and generate mipmaps
+	Shader shaderSingleColor("./shaderSingleColor.vsl", "./shaderSingleColor.fsl");
 
-	   SDL_Surface *tex = IMG_Load("./container.jpg");
 
-	   if(tex == 0)
-		{
-		   std::cout << "Erreur : " << SDL_GetError() << std::endl;
-		   return false;
-	   } else {
-		   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex->w, tex->h, 0, GL_RGB, GL_UNSIGNED_BYTE, tex->pixels);
-		   glGenerateMipmap(GL_TEXTURE_2D);
-	   }
+	Shader shaders[] = {shader, shaderSingleColor};
 
-	shader.use();
-	int vertexTexture = glGetUniformLocation(shader.ID, "ourTexture");
-	glUniform1i(vertexTexture,0);
-
-	glm::mat4 projection;
-	projection = glm::perspective(glm::radians(45.0f), (float)800 / (float)600, 0.1f, 100.0f);
-	// note: the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
-	shader.setMat4("projection", projection);
-
-	renderLoop(window, shader, VAO, texture);
+	renderLoop(window, VAO, shaders);
 
 /**********************************************************************/
 

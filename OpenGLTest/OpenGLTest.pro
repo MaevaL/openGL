@@ -24,4 +24,6 @@ SOURCES += main.cpp \
 
 DISTFILES += \
     ../build-OpenGLTest-msys2-Release/fragmentShaderCubeTex.fsl \
-    ../build-OpenGLTest-msys2-Release/vertexShaderCubeTex.vsl
+    ../build-OpenGLTest-msys2-Release/vertexShaderCubeTex.vsl \
+    ../build-OpenGLTest-msys2-Release/shaderSingleColor.fsl \
+    ../build-OpenGLTest-msys2-Release/shaderSingleColor.vsl
