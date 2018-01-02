@@ -56,19 +56,14 @@ float vertices[] = {
 	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
 	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
-//vector to translate a cube to get 10 cubes at different position in the scene
+//vector to translate a cube to get cubes at different position in the scene
 glm::vec3 cubePositions[] = {
   glm::vec3( 0.0f,  0.0f,  0.0f), //room cube
-  glm::vec3( -10.0f,  -12.0f, -10.0f),
+  glm::vec3( -10.0f,  -8.0f, -10.0f),
   glm::vec3(10.0f, -12.0f, -10.0f),
   glm::vec3(10.0f, -12.0f, 10.0f),
   glm::vec3( -10.0f, -12.0f, 10.0f),
   glm::vec3( 10.0f,  10.0f, 10.0f),
-  glm::vec3(-10.0f,  10.0f, -10.0f),
-  glm::vec3( 10.0f, 10.0f, -10.0f),
-  glm::vec3( -10.0f,  10.0f, 10.0f),
-
-  //glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
 glm::vec3 cubeScale[] = {
@@ -79,9 +74,6 @@ glm::vec3 cubeScale[] = {
 	glm::vec3( 2.0f,  2.0f,  2.0f),
 	glm::vec3( 3.0f,  3.0f,  3.0f),
 	glm::vec3( 1.0f,  1.0f,  1.0f),
-	glm::vec3( 1.0f,  1.0f,  1.0f),
-	glm::vec3( 1.0f,  1.0f,  1.0f),
-	glm::vec3( 1.0f,  1.0f,  1.0f)
 };
 
 
@@ -95,12 +87,13 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 bool firstMouse = true;
-float yaw   = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+float yaw   = -90.0f;
 float pitch =  0.0f;
 float lastX =  800.0f / 2.0;
 float lastY =  600.0 / 2.0;
 float fov   =  45.0f;
 float speed = 20.0f;
+float zoom = 45.0f;
 
 
 void initContext()
@@ -218,7 +211,7 @@ void renderLoop(GLFWwindow* window, int VAO, Shader* shaders){
 
 		GLuint texture;
 		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
+		glBindTexture(GL_TEXTURE_2D, texture);
 		 //load image, create texture and generate mipmaps
 		SDL_Surface *tex = IMG_Load("./mur.jpg");
 
@@ -232,10 +225,6 @@ void renderLoop(GLFWwindow* window, int VAO, Shader* shaders){
 		 int vertexTexture = glGetUniformLocation(shaders[0].ID, "ourTexture");
 		 glUniform1i(vertexTexture,0);
 
-		 glEnable(GL_DEPTH_TEST);
-		 glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		 glStencilMask(0x00);
 		 shaders[0].use();
 
 		// room
@@ -257,42 +246,12 @@ void renderLoop(GLFWwindow* window, int VAO, Shader* shaders){
 		 glActiveTexture(GL_TEXTURE0);
 		 glBindTexture(GL_TEXTURE_2D, texture);
 
-		// 3D
-		// 2. use our shader program when we want to render an object
-
-		shaders[0].use();
-//		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-//		glStencilMask(0xFF);
 
 		for(int i = 1; i < 6; i++) {
 			createCube(VAO, shaders[0], i, true);
 		}
 
-//		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-//		glStencilMask(0x00);
-//		glDisable(GL_DEPTH_TEST);
 
-
-//		shaders[1].use();
-//		glm::mat4 model;
-//		model = glm::mat4();
-//		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-//		model = glm::scale(model, cubeScale[2]);
-//		shaders[1].setMat4("model", model);
-//		shaders[1].setMat4("view", view);
-//		shaders[1].setMat4("projection", projection);
-
-//		for(int i = 1; i < 6; i++) {
-//			createCube(VAO, shaders[1], i, true);
-//		}
-
-		glStencilMask(0xFF);
-		glEnable(GL_DEPTH_TEST);
-
-		// 3. now draw the object
-		//glDrawArrays(GL_TRIANGLES, 0 , 36);
-
-		//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		/**********************************************************************/
 
 		// check and call events and swap buffer
@@ -334,7 +293,7 @@ int main(int argc, char **argv) {
 	unsigned int VBO, VAO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
-	//glGenBuffers(1, &EBO);
+
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	glBindVertexArray(VAO);
 
@@ -342,8 +301,6 @@ int main(int argc, char **argv) {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 	// 1. then set the vertex attributes pointers
 	/**
 	 * @brief glad_glVertexAttribPointer
@@ -361,14 +318,8 @@ int main(int argc, char **argv) {
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE,5 * sizeof(float), (void*)(3*sizeof(float)));
 	glEnableVertexAttribArray(2);
 
-//	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-//	glEnableVertexAttribArray(2);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	//glBindVertexArray(0);
-
-
-
 
 /**********************************************************************/
 
@@ -378,13 +329,7 @@ int main(int argc, char **argv) {
  * glfwPollEvents : check events like input
  **/
 
-
-	// load and create a texture
-	   // -------------------------
-	Shader shaderSingleColor("./shaderSingleColor.vsl", "./shaderSingleColor.fsl");
-
-
-	Shader shaders[] = {shader, shaderSingleColor};
+	Shader shaders[] = {shader}; // if more than one shader
 
 	renderLoop(window, VAO, shaders);
 
@@ -392,7 +337,6 @@ int main(int argc, char **argv) {
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-//	glDeleteBuffers(1, &EBO);
 
 	glfwTerminate();
 	return 0;
